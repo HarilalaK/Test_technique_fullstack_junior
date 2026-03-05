@@ -3,15 +3,15 @@
 ## Classe Task et fonctions associées
 
 
-class Task:
-    def __init__(self, name, project, priority, is_blocked=False, block_reason=None):
-        self.name = name
-        self.project = project
-        self.priority = priority  # 1 = haute, 2 = moyenne, 3 = basse
-        self.is_blocked = is_blocked
-        self.block_reason = block_reason
+class Tache:
+    def __init__(self, nom_tache, nom_projet, niveau_priorite, est_bloquee=False, raison_blocage=None):
+        self.nom_tache = nom_tache
+        self.nom_projet = nom_projet
+        self.niveau_priorite = niveau_priorite  # 1 = haute, 2 = moyenne, 3 = basse
+        self.est_bloquee = est_bloquee
+        self.raison_blocage = raison_blocage
 
-    def set_blocked(self, is_blocked: bool, block_reason: str = None):
+    def definir_blocage(self, est_bloquee: bool, raison_blocage: str = None):
         """
         Change le statut de blocage d'une tâche.
         
@@ -20,20 +20,20 @@ class Task:
         
         Lève une erreur si la règle n'est pas respectée.
         """
-        if is_blocked:
-            if not block_reason or not block_reason.strip():
+        if est_bloquee:
+            if not raison_blocage or not raison_blocage.strip():
                 raise ValueError(
                     "Il faut donner une raison quand on bloque une tâche."
                 )
 
-        self.is_blocked = is_blocked
-        self.block_reason = block_reason.strip() if block_reason else None
+        self.est_bloquee = est_bloquee
+        self.raison_blocage = raison_blocage.strip() if raison_blocage else None
 
     def __repr__(self):
         return (
-            f"Task(name={self.name!r}, project={self.project!r}, "
-            f"priority={self.priority}, is_blocked={self.is_blocked}, "
-            f"block_reason={self.block_reason!r})"
+            f"Tache(nom_tache={self.nom_tache!r}, nom_projet={self.nom_projet!r}, "
+            f"niveau_priorite={self.niveau_priorite}, est_bloquee={self.est_bloquee}, "
+            f"raison_blocage={self.raison_blocage!r})"
         )
 
 
@@ -41,15 +41,15 @@ class Task:
 # 1. Fonction pour trouver et trier les tâches bloquées
 # -------------------------------------------------------
 
-def get_blocked_tasks(tasks: list[Task]) -> list[Task]:
+def obtenir_taches_bloquees(liste_taches: list[Tache]) -> list[Tache]:
     """
-    Renvoie seulement les tâches bloquées, bien rangées :
-    - d'abord par priorité (1 avant 2 avant 3)
-    - ensuite par ordre alphabétique du nom
+    Renvoie uniquement les tâches bloquées, triées par :
+    - Priorité croissante (1 avant 2 avant 3)
+    - Ordre alphabétique du nom de tâche
     """
-    blocked = [task for task in tasks if task.is_blocked]
-    blocked.sort(key=lambda task: (task.priority, task.name))
-    return blocked
+    taches_bloquees = [tache for tache in liste_taches if tache.est_bloquee]
+    taches_bloquees.sort(key=lambda tache: (tache.niveau_priorite, tache.nom_tache))
+    return taches_bloquees
 
 
 # -----------------------------
@@ -59,40 +59,40 @@ def get_blocked_tasks(tasks: list[Task]) -> list[Task]:
 if __name__ == "__main__":
 
     # --- Création de quelques tâches ---
-    tasks = [
-        Task("Configurer le serveur",        "Client A", priority=1, is_blocked=True,  block_reason="En attente des accès"),
-        Task("Rédiger la documentation",     "Interne",  priority=3, is_blocked=True,  block_reason="Manque d'informations"),
-        Task("Mettre à jour le schéma",      "Client B", priority=2, is_blocked=False),
-        Task("Déployer en production",       "Client A", priority=1, is_blocked=True,  block_reason="Tests non validés"),
-        Task("Analyser les besoins",         "Client C", priority=2, is_blocked=True,  block_reason="Réunion annulée"),
-        Task("Corriger le bug d'affichage",  "Interne",  priority=1, is_blocked=False),
+    liste_taches = [
+        Tache("Configurer le serveur",        "Client A", niveau_priorite=1, est_bloquee=True,  raison_blocage="En attente des accès"),
+        Tache("Rédiger la documentation",     "Interne",  niveau_priorite=3, est_bloquee=True,  raison_blocage="Manque d'informations"),
+        Tache("Mettre à jour le schéma",      "Client B", niveau_priorite=2, est_bloquee=False),
+        Tache("Déployer en production",       "Client A", niveau_priorite=1, est_bloquee=True,  raison_blocage="Tests non validés"),
+        Tache("Analyser les besoins",         "Client C", niveau_priorite=2, est_bloquee=True,  raison_blocage="Réunion annulée"),
+        Tache("Corriger le bug d'affichage",  "Interne",  niveau_priorite=1, est_bloquee=False),
     ]
 
-    # --- Test de la fonction get_blocked_tasks ---
+    # --- Test de la fonction obtenir_taches_bloquees ---
     print("=== Tâches bloquées (bien triées) ===")
-    for t in get_blocked_tasks(tasks):
-        print(f"  [{t.priority}] {t.name!r} — {t.block_reason}")
+    for tache_actuelle in obtenir_taches_bloquees(liste_taches):
+        print(f"  [{tache_actuelle.niveau_priorite}] {tache_actuelle.nom_tache!r} — {tache_actuelle.raison_blocage}")
 
     print()
 
     # --- Test : bloquer une tâche correctement ---
     print("=== Test : blocage qui fonctionne ===")
-    task = tasks[2]  # "Mettre à jour le schéma", pas encore bloquée
-    task.set_blocked(True, "Décision en attente")
-    print(f"  {task}")
+    tache_test = liste_taches[2]  # "Mettre à jour le schéma", pas encore bloquée
+    tache_test.definir_blocage(True, "Décision en attente")
+    print(f"  {tache_test}")
 
     print()
 
     # --- Test : débloquer une tâche ---
     print("=== Test : déblocage ===")
-    task.set_blocked(False)
-    print(f"  {task}")
+    tache_test.definir_blocage(False)
+    print(f"  {tache_test}")
 
     print()
 
     # --- Test : bloquer sans raison (doit planter) ---
     print("=== Test : blocage sans raison → erreur prévue ===")
     try:
-        task.set_blocked(True, "   ")  # juste des espaces → pas bon
-    except ValueError as e:
-        print(f"  Erreur attrapée : {e}")
+        tache_test.definir_blocage(True, "   ")  # juste des espaces → pas bon
+    except ValueError as erreur:
+        print(f"  Erreur attrapée : {erreur}")
