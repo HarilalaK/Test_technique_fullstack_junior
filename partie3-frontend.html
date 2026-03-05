@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tâches bloquées – Gestionnaire de projet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      color: #2d3748;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #1a202c;
+      border-left: 4px solid #e53e3e;
+      padding-left: 0.75rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls input,
+    .controls select {
+      padding: 0.5rem 0.8rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: #2d3748;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .controls input:focus,
+    .controls select:focus {
+      border-color: #4299e1;
+    }
+
+    .controls input { min-width: 220px; }
+    .controls select { min-width: 200px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    thead {
+      background: #2d3748;
+      color: #fff;
+    }
+
+    thead th {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #edf2f7;
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7fafc; }
+
+    tbody td {
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .priority-badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .priority-1 { background: #fed7d7; color: #c53030; }
+    .priority-2 { background: #fefcbf; color: #b7791f; }
+    .priority-3 { background: #c6f6d5; color: #276749; }
+
+    .no-results {
+      text-align: center;
+      padding: 2rem;
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    .count {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tâches bloquées</h1>
+
+  <div class="controls">
+    <input
+      type="text"
+      id="rechercheNom"
+      placeholder="Rechercher par nom de tâche…"
+      oninput="filtrerTaches()"
+    />
+    <select id="filtreProjet" onchange="filtrerTaches()">
+      <option value="">Tous les projets</option>
+    </select>
+  </div>
+
+  <p class="count" id="compteurResultats"></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nom de la tâche</th>
+        <th>Projet</th>
+        <th>Priorité</th>
+        <th>Raison du blocage</th>
+      </tr>
+    </thead>
+    <tbody id="corpsTableau"></tbody>
+  </table>
+
+  <script>
+    // --- Données JSON statiques ---
+    const listeTaches = [
+      {
+        name: "Configurer le serveur",
+        project: "Implémentation Client A",
+        priority: 1,
+        block_reason: "En attente des accès"
+      },
+      {
+        name: "Rédiger la documentation",
+        project: "Projet interne",
+        priority: 3,
+        block_reason: "Manque d'informations"
+      },
+      {
+        name: "Mettre à jour le schéma de données",
+        project: "Implémentation Client B",
+        priority: 2,
+        block_reason: "Décision métier en attente"
+      },
+      {
+        name: "Déployer en production",
+        project: "Implémentation Client A",
+        priority: 1,
+        block_reason: "Tests non validés"
+      },
+      {
+        name: "Analyser les besoins",
+        project: "Projet interne",
+        priority: 2,
+        block_reason: "Réunion annulée"
+      }
+    ];
+
+    // --- Libellés de priorité ---
+    const libellesPriorite = {
+      1: "Haute",
+      2: "Moyenne",
+      3: "Basse"
+    };
+
+    // --- Remplir le <select> avec les projets uniques ---
+    function remplirFiltreProjets() {
+      const select = document.getElementById("filtreProjet");
+      const projets = [...new Set(listeTaches.map(t => t.project))].sort();
+
+      projets.forEach(projet => {
+        const option = document.createElement("option");
+        option.value = projet;
+        option.textContent = projet;
+        select.appendChild(option);
+      });
+    }
+
+    // --- Afficher les tâches dans le tableau ---
+    function afficherTaches(tachesFiltrees) {
+      const corpsTableau = document.getElementById("corpsTableau");
+      const compteur = document.getElementById("compteurResultats");
+
+      corpsTableau.innerHTML = "";
+
+      if (tachesFiltrees.length === 0) {
+        corpsTableau.innerHTML = '<tr><td colspan="4" class="no-results">Aucun résultat trouvé</td></tr>';
+        compteur.textContent = "0 tâche affichée";
+        return;
+      }
+
+      compteur.textContent = `${tachesFiltrees.length} tâche(s) affichée(s)`;
+
+      tachesFiltrees.forEach(tache => {
+        const ligne = document.createElement("tr");
+        ligne.innerHTML = `
+          <td>${tache.name}</td>
+          <td>${tache.project}</td>
+          <td>
+            <span class="priority-badge priority-${tache.priority}">
+              ${tache.priority} – ${libellesPriorite[tache.priority] || "Inconnue"}
+            </span>
+          </td>
+          <td>${tache.block_reason || "—"}</td>
+        `;
+        corpsTableau.appendChild(ligne);
+      });
+    }
+
+    // --- Filtrage combiné (texte + projet) ---
+    function filtrerTaches() {
+      const valeurRecherche = document.getElementById("rechercheNom").value.toLowerCase().trim();
+      const projetSelectionne = document.getElementById("filtreProjet").value;
+
+      const resultatFiltre = listeTaches.filter(tache => {
+        const correspondNom = tache.name.toLowerCase().includes(valeurRecherche);
+        const correspondProjet = projetSelectionne === "" || tache.project === projetSelectionne;
+        return correspondNom && correspondProjet;
+      });
+
+      afficherTaches(resultatFiltre);
+    }
+
+    // --- Initialisation ---
+    remplirFiltreProjets();
+    afficherTaches(listeTaches);
+  </script>
+
+</body>
+</html>
